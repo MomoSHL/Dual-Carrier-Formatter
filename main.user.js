@@ -4,6 +4,8 @@
 // @version      4.2
 // @description  Zwei separate Carrier-Felder (bw_carrier_betrieb/schule), formatiert & verteilt
 // @match        https://apps.ihk-berlin.de/tibrosBB/azubiHeftEditForm.jsp*
+// @updateURL    https://github.com/MomoSHL/Dual-Carrier-Formatter/raw/refs/heads/main/main.user.js
+// @downloadURL  https://github.com/MomoSHL/Dual-Carrier-Formatter/raw/refs/heads/main/main.user.js
 // @run-at       document-idle
 // @grant        none
 // @license      MIT

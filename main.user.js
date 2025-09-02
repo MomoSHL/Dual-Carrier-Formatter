@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Dual Carrier Formatter
 // @namespace    ihk-bw-formatter
-// @version      4.1
+// @version      4.3.1
 // @description  Zwei separate Carrier-Felder (bw_carrier_betrieb/schule), formatiert & verteilt
 // @match        https://apps.ihk-berlin.de/tibrosBB/azubiHeftEditForm.jsp*
 // @updateURL    https://github.com/MomoSHL/Dual-Carrier-Formatter/raw/refs/heads/main/main.user.js

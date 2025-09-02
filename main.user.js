@@ -78,7 +78,7 @@
         bar.id = '__bw_carrier_bar__';
 
         // Responsive Position oben rechts
-        bar.style.position = 'fixed';
+        bar.style.position = 'absolute';
         bar.style.top = '10px';
         bar.style.right = '10px';
         bar.style.zIndex = '999999';

@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name         Dual Carrier Formatter
+// @author       MomoSHL
 // @namespace    ihk-bw-formatter
 // @version      4.3.2
 // @description  Zwei separate Carrier-Felder (bw_carrier_betrieb/schule), formatiert & verteilt

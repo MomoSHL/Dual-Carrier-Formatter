@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Dual Carrier Formatter
+// @name         asda
 // @namespace    ihk-bw-formatter
 // @version      4.2
 // @description  Zwei separate Carrier-Felder (bw_carrier_betrieb/schule), formatiert & verteilt
@@ -66,9 +66,11 @@
     }
 
 
-    // Remove IHK Banner + Padding
-    document.querySelector('.content').style.paddingTop = '0';
-    document.querySelector('.headerbereich').style.display = 'none';
+    // Remove IHK Banner + Padding (null-sicher)
+    const __content = document.querySelector('.content');
+    if (__content) __content.style.paddingTop = '0';
+    const __header = document.querySelector('.headerbereich');
+    if (__header) __header.style.display = 'none';
 
     // --- UI: Carrier-Leiste oben rechts einfügen ---
     function ensureCarrierBar() {
@@ -222,7 +224,90 @@
 
         out = out.replace(/\n{3,}/g, '\n\n');// 3+ -> 2
         out = out.replace(/[ \t]+\n/g, '\n');   // trailing spaces vor NL
-        return out.trim();
+
+        // Wochentage mit fortlaufendem Datum ab aktuellem Wochen-Montag einfügen
+        const weekdays = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag'];
+        // Finde aktuellen Wochen-Montag
+        function getCurrentMonday(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = (day === 0 ? -6 : 1 - day); // Sonntag=0, dann zurück auf Montag
+            d.setDate(d.getDate() + diff);
+            d.setHours(0,0,0,0);
+            return d;
+        }
+        // Format: T.MM.JJJJ
+        function formatDate(d) {
+            const day = d.getDate();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}.${month}.${year}`;
+        }
+        // Ersetze Platzhalter "2025" mit Datum des vorhergehenden Werktags
+        function getPreviousWeekday(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            let backDays = 1; // Standard: Vortag
+            if (day === 1) backDays = 3;      // Montag -> Freitag der Vorwoche
+            else if (day === 0) backDays = 2; // Sonntag -> Freitag
+            else if (day === 6) backDays = 1; // Samstag -> Freitag
+            d.setDate(d.getDate() - backDays);
+            d.setHours(0,0,0,0);
+            return d;
+        }
+        const __prevDateStr = formatDate(getPreviousWeekday(new Date()));
+        // Nur eigenständige "2025" ersetzen, nicht innerhalb von z.B. 01.09.2025
+        out = out.replace(/2025/g, (match, offset, str) => {
+            const prev = offset > 0 ? str[offset - 1] : '';
+            const next = str[offset + 4] || '';
+            if ((prev && /[\d.]/.test(prev)) || (next && /\d/.test(next))) return match;
+            return __prevDateStr;
+        });
+            // Ersetze Wochentage mit Datum (idempotent) und kapitalisiere am Zeilenanfang
+            let lines = out.split('\n');
+            const weekdayLabels = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
+            let monday = getCurrentMonday(new Date());
+            lines = lines.map(line => {
+                const m = line.match(/^(\s*[-–*•]?\s*)(montag|dienstag|mittwoch|donnerstag|freitag)\b/i);
+                if (!m) return line;
+                const leading = m[1] || '';
+                const dayLower = (m[2] || '').toLowerCase();
+                const i = weekdays.indexOf(dayLower);
+                if (i === -1) return line;
+
+                const dateStr = formatDate(new Date(monday.getTime() + i * 24 * 60 * 60 * 1000));
+
+                // Rest der Zeile nach dem gefundenen Wochentag berechnen
+                const afterDayStart = leading.length + m[2].length; // nutzt originale Schreibweise-Länge
+                let rest = line.slice(afterDayStart);
+                // Falls bereits ein Datum folgt, entfernen (idempotent, inkl. Trennzeichen)
+                rest = rest.replace(/^\s*\d{1,2}\.\d{2}\.\d{4}(?=[\s,–-]|$)\s*[,-]?\s*/, ' ');
+
+                const dayCap = weekdayLabels[i];
+                return `${leading}${dayCap} ${dateStr}${rest}`;
+            });
+            return lines.join('\n').trim();
+    }
+
+    // Fügt Normalisierungs-Listener direkt an den Ziel-Textareas an
+    function attachNormalizationToTargets() {
+        const names = [NAMES.betrieb, NAMES.schule];
+        names.forEach(name => {
+            const areas = findTextAreasByName(name);
+            areas.forEach(ta => {
+                if (ta.__bwNormalized) return;
+                ta.__bwNormalized = true;
+
+                const applyNorm = () => {
+                    const nv = normalize(ta.value);
+                    if (nv !== ta.value) setTextAreaValue(ta, nv);
+                };
+
+                ta.addEventListener('paste', () => setTimeout(applyNorm, 0));
+                ta.addEventListener('blur', applyNorm);
+                ta.addEventListener('change', applyNorm);
+            });
+        });
     }
 
     // Suche Textareas – inkl. gleiche Herkunft iframes
@@ -321,6 +406,8 @@
             setTimeout(() => tryOnce(), 2000);
             setTimeout(() => tryOnce(), 4000);
             setTimeout(() => tryOnce(), 8000);
+            // Ziel-Textareas beobachten und Listener anheften
+            setTimeout(() => attachNormalizationToTargets(), 200);
             
             // Zusätzliche E-Mail Auto-Fill Versuche
             setTimeout(() => autoFillEmail(), 1500);
@@ -330,6 +417,7 @@
             if (tryOnce()) return; // sofort geschafft oder Timeout
 
             const mo = new MutationObserver(() => {
+                attachNormalizationToTargets();
                 if (tryOnce()) mo.disconnect();
             });
             mo.observe(document.documentElement, { subtree: true, childList: true });
@@ -347,6 +435,7 @@
                 setTimeout(() => {
                     ensureCarrierBar();
                     forceFullPageRender(); // Nochmals rendern nach Carrier-Bar
+                    attachNormalizationToTargets();
                     waitForTargetsAndDistribute(45000);
                 }, 500);
             } else {
@@ -354,6 +443,7 @@
                     setTimeout(() => {
                         ensureCarrierBar();
                         forceFullPageRender(); // Nochmals rendern nach Carrier-Bar
+                        attachNormalizationToTargets();
                         waitForTargetsAndDistribute(45000);
                     }, 500);
                 });

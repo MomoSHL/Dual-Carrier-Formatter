@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         IHK - Dual Carrier Formatter
+// @name         Dual Carrier Formatter
 // @namespace    ihk-bw-formatter
 // @version      4.2
 // @description  Zwei separate Carrier-Felder (bw_carrier_betrieb/schule), formatiert & verteilt

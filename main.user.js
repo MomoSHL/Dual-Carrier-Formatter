@@ -3,7 +3,7 @@
 // @author       MomoSHL
 // @namespace    ihk-bw-formatter
 // @version      4.3.2
-// @description  Zwei separate Carrier-Felder (bw_carrier_betrieb/schule), formatiert & verteilt
+// @description  Carrier to allow bitwarden Autofill
 // @match        https://apps.ihk-berlin.de/tibrosBB/azubiHeftEditForm.jsp*
 // @updateURL    https://github.com/MomoSHL/Dual-Carrier-Formatter/raw/refs/heads/main/main.user.js
 // @downloadURL  https://github.com/MomoSHL/Dual-Carrier-Formatter/raw/refs/heads/main/main.user.js
@@ -14,6 +14,9 @@
 
 (function () {
     'use strict';
+
+    // --- KONFIGURATION ---
+    const EMAIL = 'christian.grams@charite.de';
 
     // Ziel-Textareas
     const NAMES = {
@@ -190,8 +193,8 @@
     // --- E-Mail Auto-Fill ---
     function autoFillEmail() {
         const emailField = document.querySelector('input[name="ausbMail2"]');
-        if (emailField && emailField.value !== 'christian.grams@charite.de') {
-            emailField.value = 'christian.grams@charite.de';
+        if (emailField && emailField.value !== EMAIL) {
+            emailField.value = EMAIL;
             emailField.dispatchEvent(new Event('input', { bubbles: true }));
             emailField.dispatchEvent(new Event('change', { bubbles: true }));
             return true;
@@ -216,7 +219,8 @@
         return true;
     }
 
-    function normalize(value) {
+    // Basis-Normalisierung ohne Datum (für manuelle Eingaben in Ziel-Textareas)
+    function normalizeBasic(value) {
         if (value == null) return '';
         let out = String(value);
         out = out.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -227,6 +231,13 @@
 
         out = out.replace(/\n{3,}/g, '\n\n');// 3+ -> 2
         out = out.replace(/[ \t]+\n/g, '\n');   // trailing spaces vor NL
+
+        return out.trim();
+    }
+
+    // Vollständige Normalisierung MIT Datum (für Carrier-Autofill)
+    function normalize(value) {
+        let out = normalizeBasic(value);
 
         // Wochentage mit fortlaufendem Datum ab aktuellem Wochen-Montag einfügen
         const weekdays = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag'];
@@ -293,6 +304,7 @@
     }
 
     // Fügt Normalisierungs-Listener direkt an den Ziel-Textareas an
+    // Verwendet nur Basis-Normalisierung (OHNE Datumsanpassung) für manuelle Eingaben
     function attachNormalizationToTargets() {
         const names = [NAMES.betrieb, NAMES.schule];
         names.forEach(name => {
@@ -302,7 +314,8 @@
                 ta.__bwNormalized = true;
 
                 const applyNorm = () => {
-                    const nv = normalize(ta.value);
+                    // Nur Basis-Normalisierung ohne Datum
+                    const nv = normalizeBasic(ta.value);
                     if (nv !== ta.value) setTextAreaValue(ta, nv);
                 };
 
@@ -334,6 +347,7 @@
     }
 
     // Trage aus Carriern in Textareas ein - Erlaube mehrfache Ausführung
+    // Verwendet vollständige Normalisierung MIT Datumsanpassung
     function distributeFromCarriers() {
         const inB = document.querySelector(`input[name="${CARRIERS.betrieb.name}"]`);
         const inS = document.querySelector(`input[name="${CARRIERS.schule.name}"]`);
@@ -343,6 +357,7 @@
         if (inB && inB.value.trim()) {
             const taB = findTextAreasByName(NAMES.betrieb)[0];
             if (taB) {
+                // Vollständige Normalisierung MIT Datum für Carrier-Input
                 const newValue = normalize(inB.value);
                 // Immer einfügen, auch wenn der Wert gleich ist (für mehrfache Ausführung)
                 try {
@@ -359,6 +374,7 @@
         if (inS && inS.value.trim()) {
             const taS = findTextAreasByName(NAMES.schule)[0];
             if (taS) {
+                // Vollständige Normalisierung MIT Datum für Carrier-Input
                 const newValue = normalize(inS.value);
                 // Immer einfügen, auch wenn der Wert gleich ist (für mehrfache Ausführung)
                 try {
@@ -411,7 +427,7 @@
             setTimeout(() => tryOnce(), 8000);
             // Ziel-Textareas beobachten und Listener anheften
             setTimeout(() => attachNormalizationToTargets(), 200);
-            
+
             // Zusätzliche E-Mail Auto-Fill Versuche
             setTimeout(() => autoFillEmail(), 1500);
             setTimeout(() => autoFillEmail(), 3000);

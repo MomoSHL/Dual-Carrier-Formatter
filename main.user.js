@@ -3,7 +3,7 @@
 // @author       MomoSHL
 // @namespace    ihk-bw-formatter
 // @version      4.3.2
-// @description  Carrier to allow bitwarden Autofill
+// @description  Zwei separate Carrier-Felder (bw_carrier_betrieb/schule), formatiert & verteilt
 // @match        https://apps.ihk-berlin.de/tibrosBB/azubiHeftEditForm.jsp*
 // @updateURL    https://github.com/MomoSHL/Dual-Carrier-Formatter/raw/refs/heads/main/main.user.js
 // @downloadURL  https://github.com/MomoSHL/Dual-Carrier-Formatter/raw/refs/heads/main/main.user.js
@@ -192,11 +192,18 @@
 
     // --- E-Mail Auto-Fill ---
     function autoFillEmail() {
-        const emailField = document.querySelector('input[name="ausbMail2"]');
-        if (emailField && emailField.value !== EMAIL) {
-            emailField.value = EMAIL;
-            emailField.dispatchEvent(new Event('input', { bubbles: true }));
-            emailField.dispatchEvent(new Event('change', { bubbles: true }));
+        const emailField2 = document.querySelector('input[name="ausbMail2"]');
+        if (emailField2 && emailField2.value !== EMAIL) {
+            emailField2.value = EMAIL;
+            emailField2.dispatchEvent(new Event('input', { bubbles: true }));
+            emailField2.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+        }
+        const emailField1 = document.querySelector('input[name="ausbMail"]');
+        if (emailField1 && emailField1.value !== EMAIL) {
+            emailField1.value = EMAIL;
+            emailField1.dispatchEvent(new Event('input', { bubbles: true }));
+            emailField1.dispatchEvent(new Event('change', { bubbles: true }));
             return true;
         }
         return false;

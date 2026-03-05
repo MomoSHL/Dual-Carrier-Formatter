@@ -4,7 +4,7 @@
 // @namespace    ihk-bw-formatter
 // @version      4.3.2
 // @description  Zwei separate Carrier-Felder (bw_carrier_betrieb/schule), formatiert & verteilt
-// @match        https://apps.ihk-berlin.de/tibrosBB/azubiHeftEditForm.jsp*
+// @match        https://apps.ihk-berlin.de/tibrosBB/azubiHeftEditForm*
 // @updateURL    https://github.com/MomoSHL/Dual-Carrier-Formatter/raw/refs/heads/main/main.user.js
 // @downloadURL  https://github.com/MomoSHL/Dual-Carrier-Formatter/raw/refs/heads/main/main.user.js
 // @run-at       document-idle
@@ -249,14 +249,16 @@
         // Wochentage mit fortlaufendem Datum ab aktuellem Wochen-Montag einfügen
         const weekdays = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag'];
         // Finde aktuellen Wochen-Montag
-        function getCurrentMonday(date) {
-            const d = new Date(date);
-            const day = d.getDay();
-            const diff = (day === 0 ? -6 : 1 - day); // Sonntag=0, dann zurück auf Montag
-            d.setDate(d.getDate() + diff);
-            d.setHours(0,0,0,0);
-            return d;
-        }
+       function getCurrentMonday() {
+           const input = document.querySelector('[name="edtvon"]').value;
+
+           const [day, month, year] = input.split('.').map(Number);
+
+           const d = new Date(year, month - 1, day); // Monat -1 wegen JS Index
+           d.setHours(0,0,0,0);
+
+           return d;
+       }
         // Format: T.MM.JJJJ
         function formatDate(d) {
             const day = d.getDate();
@@ -269,7 +271,7 @@
             const d = new Date(date);
             const day = d.getDay();
             let backDays = 1; // Standard: Vortag
-            if (day === 1) backDays = 3;      // Montag -> Freitag der Vorwoche
+            if (day === 1) backDays = 3; // Montag -> Freitag der Vorwoche
             else if (day === 0) backDays = 2; // Sonntag -> Freitag
             else if (day === 6) backDays = 1; // Samstag -> Freitag
             d.setDate(d.getDate() - backDays);
